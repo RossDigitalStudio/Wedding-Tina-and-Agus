@@ -62,11 +62,11 @@ export function LiveGallery({
           <div
             key={`bg-${current.id}`}
             className="absolute inset-0 scale-110 bg-cover bg-center opacity-35 blur-3xl transition-all duration-700"
-            style={{ backgroundImage: `url(${albumMediaUrl(current.id)})` }}
+            style={{ backgroundImage: `url(${albumMediaUrl(current.id)}&surface=live)` }}
           />
           <div className="absolute inset-0 bg-black/40" />
           <div key={current.id} className="absolute inset-0 flex items-center justify-center p-6 pb-32 pr-80 animate-[fadeIn_.7s_ease-out]">
-            <img src={albumMediaUrl(current.id)} alt="Foto compartida" className="max-h-full max-w-full rounded-3xl object-contain shadow-2xl" />
+            <img src={`${albumMediaUrl(current.id)}&surface=live`} alt="Foto compartida" className="max-h-full max-w-full rounded-3xl object-contain shadow-2xl" />
           </div>
         </>
       ) : (

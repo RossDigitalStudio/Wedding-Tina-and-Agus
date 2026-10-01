@@ -12,9 +12,10 @@ export function formatBytes(bytes: number) {
   return `${value >= 10 || index === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[index]}`;
 }
 
-export function publicAlbumUrl() {
+export function publicAlbumUrl(slug?: string) {
   const base = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-  return base ? `${base}/album` : "/album";
+  const path = slug ? `/album/${encodeURIComponent(slug)}` : "/album";
+  return base ? `${base}${path}` : path;
 }
 
 export function quickChartQrUrl(text: string, size = 280) {

@@ -1,69 +1,57 @@
-import { createHash, timingSafeEqual } from "crypto";
+import { legacyCompleteUpload } from "@/lib/album/legacy-upload";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-function safeEqual(left: string, right: string) {
-  const a = Buffer.from(left, "utf8");
-  const b = Buffer.from(right, "utf8");
-  return a.length === b.length && timingSafeEqual(a, b);
-}
+import {
+  AlbumError,
+  apiError,
+  hashToken,
+  publicMedia,
+  requireGuest,
+  requireUuid,
+  sameOrigin,
+} from "@/lib/album/server";
+import { createR2PresignedUrl } from "@/lib/r2/signing";
 
 export async function POST(request: Request) {
   try {
+    sameOrigin(request);
     const body = await request.json();
-    const mediaId = String(body.mediaId || "");
-    const uploadToken = String(body.uploadToken || "");
-    const width = Number(body.width || 0) || null;
-    const height = Number(body.height || 0) || null;
-    const durationSeconds = Number(body.durationSeconds || 0) || null;
-
-    if (!mediaId || !uploadToken) {
-      return NextResponse.json({ error: "Carga inválida." }, { status: 400 });
-    }
-
+    const mediaId = requireUuid(body.mediaId);
     const admin = createAdminClient();
-    const { data: media, error } = await admin
-      .from("album_media")
-      .select("id, upload_state, upload_token_hash, media_type, album_id")
-      .eq("id", mediaId)
-      .maybeSingle();
-
-    if (error || !media || !media.upload_token_hash || media.upload_state !== "uploading") {
-      return NextResponse.json({ error: "La carga ya no está disponible." }, { status: 404 });
-    }
-
-    const candidateHash = createHash("sha256").update(uploadToken).digest("hex");
-    if (!safeEqual(candidateHash, media.upload_token_hash)) {
-      return NextResponse.json({ error: "Token de carga inválido." }, { status: 403 });
-    }
-
-    const { data: album } = await admin.from("wedding_albums").select("max_video_seconds").eq("id", media.album_id).single();
-    if (media.media_type === "video" && durationSeconds && album && durationSeconds > album.max_video_seconds) {
-      return NextResponse.json({ error: `El video supera el máximo de ${album.max_video_seconds} segundos.` }, { status: 413 });
-    }
-
-    const { data: updated, error: updateError } = await admin
-      .from("album_media")
-      .update({
-        upload_state: "ready",
-        width,
-        height,
-        duration_seconds: durationSeconds,
-        uploaded_at: new Date().toISOString(),
-        upload_token_hash: null,
-      })
-      .eq("id", mediaId)
-      .select("id, album_id, wedding_id, media_type, guest_name, original_filename, mime_type, file_size_bytes, preview_mime_type, upload_state, moderation_status, show_in_gallery, show_in_live, favorite, width, height, duration_seconds, uploaded_at, created_at, updated_at")
-      .single();
-
-    if (updateError) {
-      console.error(updateError);
-      return NextResponse.json({ error: "No pudimos completar la carga." }, { status: 500 });
-    }
-
-    return NextResponse.json({ media: updated });
+    const { data: media, error } = await admin.from("album_media").select("*").eq("id", mediaId).maybeSingle();
+    if (error) throw error;
+    if (!media) throw new AlbumError("Carga inválida.", 404);
+    if (!("guest_id" in media) || (media.guest_id === null && !body.albumId))
+      return legacyCompleteUpload(
+        new Request(request.url, { method: "POST", headers: request.headers, body: JSON.stringify(body) }),
+      );
+    const guest = await requireGuest(requireUuid(body.albumId));
+    if (media.guest_id !== guest.id) throw new AlbumError("Carga inválida.", 403);
+    if (media.upload_state === "ready") return NextResponse.json({ media: publicMedia(media) });
+    if (hashToken(String(body.uploadToken || "")) !== media.upload_token_hash)
+      throw new AlbumError("Carga inválida.", 403);
+    // An upload is ready only after both stored objects are present.
+    const [original, preview] = await Promise.all([
+      fetch(createR2PresignedUrl("HEAD", media.original_key, 60), { method: "HEAD" }),
+      fetch(createR2PresignedUrl("HEAD", media.preview_key, 60), { method: "HEAD" }),
+    ]);
+    if (!original.ok || !preview.ok || Number(original.headers.get("content-length")) !== Number(media.file_size_bytes))
+      throw new AlbumError("La carga está incompleta. Volvé a intentarlo.", 409);
+    const width = Number(body.width),
+      height = Number(body.height);
+    if (!Number.isInteger(width) || width <= 0 || !Number.isInteger(height) || height <= 0)
+      throw new AlbumError("Dimensiones inválidas.");
+    const { data, error: finishError } = await admin.rpc("album_finish_upload", {
+      p_guest_id: guest.id,
+      p_media_id: mediaId,
+      p_token_hash: media.upload_token_hash,
+      p_width: width,
+      p_height: height,
+      p_duration: body.durationSeconds ?? null,
+    });
+    if (finishError) throw finishError;
+    return NextResponse.json({ media: publicMedia(Array.isArray(data) ? data[0] : data) });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "No pudimos completar la carga." }, { status: 500 });
+    return apiError(error);
   }
 }

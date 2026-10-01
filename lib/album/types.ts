@@ -18,6 +18,12 @@ export type WeddingAlbum = {
   live_interval_seconds: number;
   show_guest_names: boolean;
   missions_enabled: boolean;
+  max_uploads_per_guest: number;
+  people_enabled: boolean;
+  sparks_enabled: boolean;
+  instagram_on_match: boolean;
+  likes_enabled: boolean;
+  gallery_reveal_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -29,6 +35,7 @@ export type AlbumMedia = {
   media_type: "photo" | "video";
   guest_name: string | null;
   uploader_session_id: string | null;
+  guest_id: string | null;
   original_filename: string;
   mime_type: string;
   file_size_bytes: number;
@@ -56,4 +63,24 @@ export type AlbumMission = {
   sort_order: number;
   created_at: string;
   updated_at: string;
+};
+
+export type AlbumGuest = {
+  id: string;
+  display_name: string;
+  social_enabled: boolean;
+  sparks_enabled: boolean;
+  is_adult?: boolean;
+  instagram_handle?: string | null;
+  has_photo: boolean;
+  photo_count: number;
+  sent_spark?: boolean;
+};
+export type AlbumSocial = {
+  me: AlbumGuest | null;
+  guests: AlbumGuest[];
+  matches: AlbumGuest[];
+  likes: Record<string, { count: number; liked: boolean }>;
+  uploads_used: number;
+  remaining: number | null;
 };

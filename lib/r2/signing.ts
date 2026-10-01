@@ -1,6 +1,6 @@
 import { createHash, createHmac } from "crypto";
 
-type PresignMethod = "GET" | "PUT" | "DELETE";
+type PresignMethod = "GET" | "PUT" | "DELETE" | "HEAD";
 
 function required(name: string) {
   const value = process.env[name];
@@ -52,21 +52,11 @@ export function createR2PresignedUrl(method: PresignMethod, key: string, expires
     .join("&");
 
   const canonicalUri = objectPath(bucket, key);
-  const canonicalRequest = [
-    method,
-    canonicalUri,
-    canonicalQuery,
-    `host:${host}\n`,
-    "host",
-    "UNSIGNED-PAYLOAD",
-  ].join("\n");
+  const canonicalRequest = [method, canonicalUri, canonicalQuery, `host:${host}\n`, "host", "UNSIGNED-PAYLOAD"].join(
+    "\n",
+  );
 
-  const stringToSign = [
-    "AWS4-HMAC-SHA256",
-    amzDate,
-    credentialScope,
-    hash(canonicalRequest),
-  ].join("\n");
+  const stringToSign = ["AWS4-HMAC-SHA256", amzDate, credentialScope, hash(canonicalRequest)].join("\n");
 
   const dateKey = hmac(`AWS4${secretAccessKey}`, dateStamp);
   const regionKey = hmac(dateKey, region);
