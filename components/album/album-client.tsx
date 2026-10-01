@@ -149,6 +149,15 @@ async function jsonRequest(url: string, options?: RequestInit) {
   return body;
 }
 
+function WeddingSprig() {
+  return (
+    <svg viewBox="0 0 180 240" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden="true">
+      <path d="M25 230C42 156 90 98 130 12M63 151C92 151 120 137 154 106" />
+      <path d="M36 194C12 181 5 158 12 141C34 146 44 168 36 194ZM57 163C80 169 109 154 117 135C92 127 70 141 57 163ZM80 115C57 103 52 79 59 65C80 69 89 92 80 115ZM101 77C124 83 148 67 156 48C133 42 111 55 101 77ZM117 44C101 32 103 12 114 3C129 15 129 31 117 44ZM133 121C150 126 167 115 174 99C155 93 141 104 133 121Z" />
+    </svg>
+  );
+}
+
 export function AlbumClient({
   album: initialAlbum,
   missions,
@@ -219,7 +228,8 @@ export function AlbumClient({
     return () => window.clearInterval(timer);
   }, []);
   useEffect(() => {
-    if (!loading && !social.me) joinRef.current?.focus();
+    if (!loading && !social.me && window.matchMedia("(min-width: 761px)").matches)
+      joinRef.current?.focus({ preventScroll: true });
   }, [loading, social.me]);
   function openProfile() {
     if (social.me) {
@@ -454,6 +464,13 @@ export function AlbumClient({
     </div>
   );
 
+  const joining = !social.me;
+  const initials = album.title.split(/\s*[&+]\s*/).slice(0, 2).map((name) => name.trim().charAt(0)).join(" & ");
+  const date = album.event_date ? new Date(`${album.event_date.slice(0, 10)}T12:00:00Z`) : null;
+  const eventDate = date && !Number.isNaN(date.getTime())
+    ? new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }).format(date).replaceAll("/", ".")
+    : "Nuestro álbum";
+
   if (loading)
     return (
       <main className="flex min-h-screen items-center justify-center bg-[var(--cream)]">
@@ -467,31 +484,24 @@ export function AlbumClient({
       </main>
     );
   return (
-    <main className="min-h-screen bg-[var(--cream)] pb-28 text-[var(--ink)]">
-      <header className="bg-[var(--ink)] px-5 pb-8 pt-8 text-white">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[.25em] text-white/50">
-              {album.event_date
-                ? new Date(`${album.event_date}T12:00:00`).toLocaleDateString("es-AR")
-                : "Nuestro álbum"}
-            </p>
-            <h1 className="mt-2 font-serif text-3xl">{album.title}</h1>
+    <main className={`guest-album min-h-screen pb-28 text-[var(--ink)] ${joining ? "joining" : "has-guest"}`}>
+      <header className="album-header">
+        <div className="header-sprig header-sprig-left"><WeddingSprig /></div>
+        <div className="header-sprig header-sprig-right"><WeddingSprig /></div>
+        <div className="album-header-inner">
+          <div className="album-title">
+            <p className="header-eyebrow">{eventDate} <span>·</span> Una noche para recordar</p>
+            <h1>{album.title}</h1>
+            {joining && <p className="header-caption">Nuestro álbum, desde tus ojos.</p>}
           </div>
-          {social.me ? (
-            <button
-              onClick={openProfile}
-              className="rounded-full border border-white/20 p-3"
-              aria-label="Editar mi perfil"
-            >
+          {social.me && (
+            <button onClick={openProfile} className="profile-settings" aria-label="Editar mi perfil" title="Mi perfil">
               <Settings2 size={19} />
             </button>
-          ) : (
-            <Camera size={24} />
           )}
         </div>
       </header>
-      <div className="mx-auto max-w-4xl space-y-6 px-4 py-6">
+      <div className="album-content mx-auto max-w-4xl space-y-6 px-4 py-6">
         {error ? (
           <p role="alert" className="rounded-2xl bg-red-50 p-4 text-sm text-red-700">
             {error}
@@ -503,10 +513,26 @@ export function AlbumClient({
           </p>
         ) : null}
         {!social.me || editing ? (
-          <section className="mx-auto max-w-md rounded-3xl border border-[var(--line)] bg-white p-6 sm:p-8">
-            <p className="text-xs font-bold uppercase tracking-[.15em] text-[var(--burgundy)]">Desde tus ojos</p>
-            <h2 className="mt-3 font-serif text-4xl">{editing ? "Tu perfil" : "Bienvenido a la fiesta ♡"}</h2>
-            <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{album.welcome_message}</p>
+          <div className={joining ? "welcome-layout" : "profile-layout"}>
+            {joining && (
+              <aside className="welcome-story">
+                <div className="wedding-seal" aria-hidden="true">{initials || "♡"}</div>
+                <p className="album-eyebrow">Un pedacito de nuestra historia</p>
+                <h2>Los recuerdos más lindos<br />también los hacés vos.</h2>
+                <p className="story-description">{album.welcome_message}</p>
+                <div className="welcome-steps">
+                  <div><span><Camera size={19} strokeWidth={1.5} /></span><p><strong>Capturá el momento</strong><small>Una risa, un abrazo, un brindis.</small></p></div>
+                  <div><span><ImagePlus size={19} strokeWidth={1.5} /></span><p><strong>Compartí tu mirada</strong><small>Subí tus fotos desde el celular.</small></p></div>
+                  <div><span><Heart size={19} strokeWidth={1.5} /></span><p><strong>Revivamos esta noche</strong><small>Todos los recuerdos, en un mismo álbum.</small></p></div>
+                </div>
+                <p className="story-signature">Gracias por ser parte. <Heart size={12} aria-hidden="true" /></p>
+              </aside>
+            )}
+          <section className="profile-card rounded-3xl border border-[var(--line)] bg-white p-6 sm:p-8">
+            <div className="form-heading-icon" aria-hidden="true">{editing ? <Settings2 size={20} strokeWidth={1.5} /> : <Camera size={21} strokeWidth={1.5} />}</div>
+            <p className="album-eyebrow">{editing ? "A tu manera" : "Bienvenido a nuestra fiesta"}</p>
+            <h2 className="mt-3 font-serif text-4xl">{editing ? "Tu perfil" : "Entrá a nuestro álbum"}</h2>
+            <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{editing ? "Elegí cómo querés compartir esta noche con los demás." : "Dejanos tu nombre para saber de quién es cada recuerdo."}</p>
             <form onSubmit={saveProfile} className="mt-6 space-y-5">
               <label className="block text-sm font-semibold">
                 ¿Cómo te llamás?
@@ -522,7 +548,7 @@ export function AlbumClient({
                 />
               </label>
               {album.people_enabled ? (
-                <label className="flex items-start gap-3 text-sm">
+                <label className="profile-choice flex items-start gap-3 text-sm">
                   <input
                     type="checkbox"
                     checked={visible}
@@ -533,15 +559,15 @@ export function AlbumClient({
                     className="mt-1"
                   />
                   <span>
-                    Quiero aparecer en <strong>Quién está</strong>
-                    <span className="mt-1 block text-xs text-[var(--muted)]">
-                      Opcional. Podés cambiarlo cuando quieras.
+                    Mostrar mi perfil en <strong>Invitados</strong>
+                    <span className="mt-1 block text-xs leading-5 text-[var(--muted)]">
+                      Los demás podrán ver tu nombre y los recuerdos que compartís. Es opcional; podés cambiarlo cuando quieras.
                     </span>
                   </span>
                 </label>
               ) : null}
               {visible && album.sparks_enabled ? (
-                <div className="space-y-3 rounded-2xl bg-[var(--cream)] p-4">
+                <div className="spark-choice space-y-3 rounded-2xl bg-[var(--cream)] p-4">
                   <label className="flex items-start gap-3 text-sm">
                     <input
                       type="checkbox"
@@ -551,6 +577,9 @@ export function AlbumClient({
                     />
                     <span>
                       Quiero participar en <strong>Chispas ✨</strong>
+                      <span className="mt-1 block text-xs leading-5 text-[var(--muted)]">
+                        Para conocer a alguien que te llamó la atención. Si ambos se mandan una Chispa, les avisamos. Opcional, solo para mayores de 18.
+                      </span>
                     </span>
                   </label>
                   {sparks ? (
@@ -617,17 +646,18 @@ export function AlbumClient({
               )}
             </form>
           </section>
+          </div>
         ) : (
           <>
             {tab === "camera" ? (
               <>
-                <section className="rounded-3xl border border-[var(--line)] bg-white p-6 sm:p-8">
-                  <p className="text-xs font-bold uppercase tracking-[.15em] text-[var(--moss)]">Ya estás dentro</p>
+                <section className="upload-welcome rounded-3xl border border-[var(--line)] bg-white p-6 sm:p-8">
+                  <p className="album-eyebrow">Tu mirada también cuenta</p>
                   <h2 className="mt-2 font-serif text-4xl">Hola, {social.me.display_name} ♡</h2>
                   <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-                    Guardemos esta noche desde todos los puntos de vista.
+                    Hay momentos que solo vos podés capturar. Regalánoslos para guardarlos siempre.
                   </p>
-                  <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  <div className="capture-actions mt-6 grid gap-3 sm:grid-cols-2">
                     <button
                       className={`${primary} min-h-32 flex-col text-lg`}
                       disabled={!album.uploads_enabled || social.remaining === 0 || busy}
@@ -749,17 +779,19 @@ export function AlbumClient({
                     </button>
                   </section>
                 ) : null}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="album-shortcuts grid grid-cols-2 gap-3">
                   <button onClick={() => setTab("album")} className={secondary}>
+                    <Film size={18} />
                     Ver el álbum
                   </button>
                   {album.people_enabled ? (
                     <button onClick={() => setTab("people")} className={secondary}>
                       <Users size={18} />
-                      {social.guests.length} personas
+                      Conocer invitados
                     </button>
                   ) : null}
                 </div>
+                {album.people_enabled && <p className="shortcut-help">En Invitados podés conocer otros perfiles y descubrir sus recuerdos.</p>}
               </>
             ) : null}
             {tab === "album" ? (
@@ -858,16 +890,23 @@ export function AlbumClient({
               </section>
             ) : null}
             {tab === "people" && album.people_enabled ? (
-              <section>
-                <p className="text-xs font-bold uppercase tracking-wider text-[var(--moss)]">Compartiendo esta noche</p>
-                <h2 className="mt-2 font-serif text-4xl">Quién está</h2>
+              <section className="guests-section">
+                <p className="album-eyebrow">Compartimos mucho más que una fiesta</p>
+                <h2 className="mt-2 font-serif text-4xl">Conocé a los invitados</h2>
                 <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-                  {social.guests.length} personas se sumaron a esta parte del álbum.
-                  {album.sparks_enabled ? " Mandá una Chispa; si se eligen mutuamente, se enterarán acá." : ""}
+                  Poneles cara a los nombres y descubrí cómo están viviendo esta noche. Tocá un perfil para ver sus recuerdos.
                 </p>
+                <div className="guests-guide">
+                  <div className="guest-guide-item"><Users size={21} strokeWidth={1.5} /><div><h3>Vos elegís si aparecés</h3><p>Solo mostramos a quienes activan su perfil en Invitados. Podés compartir fotos sin aparecer en esta sección.</p></div></div>
+                  {album.sparks_enabled && <div className="guest-guide-item"><Sparkles size={21} strokeWidth={1.5} /><div><h3>¿Alguien te llamó la atención?</h3><p>Chispas es un juego opcional para mayores de 18. Mandale una desde su perfil; si también te elige, les avisamos a ambos. Tu Instagram se comparte solo si hay una elección mutua.</p></div></div>}
+                </div>
                 {!social.me.social_enabled ? (
                   <button onClick={openProfile} className={`${secondary} mt-5 w-full`}>
-                    Quiero aparecer acá
+                    <Users size={17} /> Mostrar mi perfil en Invitados
+                  </button>
+                ) : !social.me.sparks_enabled && album.sparks_enabled ? (
+                  <button onClick={openProfile} className={`${secondary} mt-5 w-full`}>
+                    <Sparkles size={17} /> Configurar mi participación en Chispas
                   </button>
                 ) : null}
                 {social.matches.length ? (
@@ -897,7 +936,9 @@ export function AlbumClient({
                     </div>
                   </div>
                 ) : null}
-                <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <p className="guests-count">{social.guests.length} {social.guests.length === 1 ? "perfil compartido" : "perfiles compartidos"}</p>
+                {!social.guests.length && <div className="guests-empty"><Users size={30} strokeWidth={1} /><h3>Este espacio recién empieza</h3><p>Cuando otros invitados elijan mostrar su perfil, vas a poder conocerlos acá.</p></div>}
+                <div className="guest-cards mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {social.guests.map((g) => (
                     <button
                       key={g.id}
@@ -926,7 +967,7 @@ export function AlbumClient({
       </div>
       {social.me && !editing ? (
         <nav
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--line)] bg-white/95 px-3 pt-3 backdrop-blur"
+          className="album-nav fixed inset-x-0 bottom-0 z-30 border-t border-[var(--line)] bg-white/95 px-3 pt-3 backdrop-blur"
           style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
         >
           <div className="mx-auto flex max-w-md justify-around">
@@ -934,13 +975,14 @@ export function AlbumClient({
               [
                 { id: "camera", label: "Cámara", Icon: Camera },
                 { id: "album", label: "Álbum", Icon: Film },
-                ...(album.people_enabled ? [{ id: "people", label: "Quién está", Icon: Users }] : []),
+                ...(album.people_enabled ? [{ id: "people", label: "Invitados", Icon: Users }] : []),
               ] as const
             ).map(({ id, label, Icon }) => (
               <button
                 key={id}
                 onClick={() => setTab(id as typeof tab)}
-                className={`flex min-w-24 flex-col items-center gap-1 rounded-2xl px-4 py-2 text-xs ${tab === id ? "bg-[var(--moss-soft)] font-bold text-[var(--moss)]" : "text-[var(--muted)]"}`}
+                aria-current={tab === id ? "page" : undefined}
+                className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs ${tab === id ? "bg-[var(--moss-soft)] font-bold text-[var(--moss)]" : "text-[var(--muted)]"}`}
               >
                 <Icon size={21} />
                 {label}
@@ -982,9 +1024,10 @@ export function AlbumClient({
                 className={`${primary} mt-6 w-full`}
               >
                 <Sparkles size={18} />
-                {selectedPerson.sent_spark ? "Retirar Chispa" : "Mandar una Chispa"}
+                {selectedPerson.sent_spark ? "Retirar Chispa" : social.me?.sparks_enabled ? "Mandar una Chispa" : "Activar Chispas en mi perfil"}
               </button>
             ) : null}
+            {selectedPerson.id !== social.me?.id && selectedPerson.sparks_enabled && album.sparks_enabled && <p className="mt-3 text-xs leading-5 text-[var(--muted)]">Una Chispa muestra tu interés. La otra persona solo se entera si también te elige.</p>}
             <button
               onClick={() => {
                 setFilter(selectedPerson.id);
@@ -1053,6 +1096,80 @@ export function AlbumClient({
           </div>
         </div>
       ) : null}
+
+      <style jsx global>{`
+        .guest-album { background: radial-gradient(ellipse at 0 30%, #e6eadf70, transparent 55%), var(--cream); }
+        .guest-album .album-header { position: relative; isolation: isolate; overflow: hidden; padding: 40px 24px 44px; background: radial-gradient(ellipse at 0 0, #59664a50, transparent 60%), radial-gradient(ellipse at 100% 100%, #682f3b35, transparent 55%), #1b211a; color: #f5efe3; }
+        .guest-album .album-header::after { content: ''; position: absolute; inset: 12px; border: 1px solid #c5b38d30; pointer-events: none; z-index: -1; }
+        .guest-album .header-sprig { position: absolute; width: 160px; color: #a9b492; opacity: .2; z-index: -1; pointer-events: none; }
+        .guest-album .header-sprig-left { top: -75px; left: 8%; transform: rotate(35deg); }
+        .guest-album .header-sprig-right { bottom: -100px; right: 8%; transform: rotate(215deg); }
+        .guest-album .album-header-inner { max-width: 960px; margin: 0 auto; text-align: center; }
+        .guest-album .header-eyebrow { font-size: 9px; line-height: 1.6; font-weight: 400; text-transform: uppercase; letter-spacing: .22em; color: #c5b38d; }
+        .guest-album .header-eyebrow span { margin: 0 8px; }
+        .guest-album .album-title h1 { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(33px, 4.7vw, 62px); font-weight: 400; letter-spacing: -.035em; line-height: 1.15; margin: 10px 0 8px; }
+        .guest-album .header-caption { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: 15px; color: #ded4c0b3; }
+        .guest-album.has-guest .album-header { padding: 25px 24px; }
+        .guest-album.has-guest .album-header-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; text-align: left; }
+        .guest-album.has-guest .album-title h1 { font-size: clamp(27px, 3.5vw, 40px); margin: 7px 0 0; }
+        .guest-album .profile-settings { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid #c5b38d55; border-radius: 50%; color: #e7dcc6; }
+        .guest-album .profile-settings:hover { background: #c5b38d15; }
+        .guest-album.joining .album-content { max-width: 1080px; padding-top: 40px; }
+        .guest-album .welcome-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 480px); align-items: center; gap: clamp(35px, 6vw, 85px); }
+        .guest-album .welcome-story { padding: 20px 10px 20px 24px; }
+        .guest-album .wedding-seal { font-family: Georgia, 'Times New Roman', serif; font-style: italic; color: var(--moss); font-size: 24px; width: 76px; height: 76px; border: 1px solid #59664a65; outline: 1px solid #59664a25; outline-offset: 5px; border-radius: 50%; display: grid; place-items: center; margin: 0 0 30px 5px; }
+        .guest-album .album-eyebrow { font-size: 9px; line-height: 1.6; letter-spacing: .2em; text-transform: uppercase; font-weight: 500; color: var(--burgundy); }
+        .guest-album .welcome-story h2 { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(32px, 3.3vw, 43px); font-weight: 400; letter-spacing: -.035em; line-height: 1.15; margin: 12px 0 20px; }
+        .guest-album .story-description { color: var(--muted); font-size: 14px; line-height: 1.9; max-width: 370px; }
+        .guest-album .welcome-steps { display: grid; gap: 19px; margin-top: 30px; }
+        .guest-album .welcome-steps > div { display: flex; align-items: center; gap: 13px; }
+        .guest-album .welcome-steps > div > span { display: grid; place-items: center; width: 39px; height: 39px; flex-shrink: 0; border-radius: 50%; background: #59664a0c; border: 1px solid #59664a25; color: var(--moss); }
+        .guest-album .welcome-steps strong { font-size: 12px; font-weight: 500; display: block; color: var(--ink); }
+        .guest-album .welcome-steps small { display: block; margin-top: 3px; font-size: 11px; line-height: 1.5; color: var(--muted); }
+        .guest-album .story-signature { display: flex; align-items: center; gap: 9px; font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: 18px; color: var(--burgundy); margin-top: 34px; }
+        .guest-album .profile-layout { max-width: 510px; margin: 0 auto; }
+        .guest-album .profile-card { width: 100%; padding: 32px; position: relative; background: #fffdf9; border-radius: 8px 8px 28px 28px; border-color: #ded7ca; box-shadow: 0 15px 60px #36392d08; }
+        .guest-album .profile-card::before { content: ''; position: absolute; top: 0; left: 28px; right: 28px; height: 3px; background: var(--moss); }
+        .guest-album .form-heading-icon { display: grid; place-items: center; width: 43px; height: 43px; border-radius: 50%; color: var(--moss); background: var(--moss-soft); margin-bottom: 19px; }
+        .guest-album .profile-card h2 { font-size: clamp(29px, 3vw, 36px); letter-spacing: -.035em; line-height: 1.15; margin-top: 10px; }
+        .guest-album .profile-card form { margin-top: 25px; }
+        .guest-album .profile-card input:not([type=checkbox]):not([type=file]) { background: #fff; border-radius: 12px; height: 50px; transition: border-color .2s, box-shadow .2s; }
+        .guest-album .profile-card input:not([type=checkbox]):not([type=file]):focus { border-color: var(--moss); box-shadow: 0 0 0 3px #59664a12; }
+        .guest-album .profile-card input[type=checkbox] { accent-color: var(--moss); width: 17px; height: 17px; flex-shrink: 0; }
+        .guest-album .profile-choice { background: #f0f2eb; border: 1px solid #e2e6d8; padding: 15px; border-radius: 14px; cursor: pointer; }
+        .guest-album .profile-choice > span { font-size: 13px; line-height: 1.6; }
+        .guest-album .profile-choice strong { color: var(--moss-dark); }
+        .guest-album .profile-choice > span > span { font-size: 12px; }
+        .guest-album .spark-choice { border: 1px solid #eadde0; background: #faf4f5; }
+        .guest-album .profile-card button[type=submit] { min-height: 52px; border-radius: 12px; font-size: 13px; box-shadow: 0 5px 15px #39433115; }
+        .guest-album .profile-card form > p:last-child { font-size: 10px; line-height: 1.8; max-width: 290px; margin-left: auto; margin-right: auto; }
+        .guest-album .upload-welcome { overflow: hidden; position: relative; border-radius: 22px; background: linear-gradient(130deg, #fffdf9 70%, #e6eadf60); }
+        .guest-album .upload-welcome::before { content: ''; position: absolute; top: 0; left: 32px; width: 60px; height: 3px; background: var(--burgundy); }
+        .guest-album .upload-welcome h2, .guest-album .guests-section h2 { letter-spacing: -.035em; line-height: 1.15; }
+        .guest-album .capture-actions button { border-radius: 16px; font-size: 15px; gap: 13px; }
+        .guest-album .capture-actions button:first-child { background: linear-gradient(135deg, #59664a, #394331); }
+        .guest-album .album-shortcuts button { background: #fffdf9; font-size: 12px; border-radius: 14px; }
+        .guest-album .shortcut-help { margin-top: 12px; text-align: center; color: var(--muted); font-size: 11px; line-height: 1.7; }
+        .guest-album .guests-guide { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 22px; background: #fffdf9; border: 1px solid var(--line); border-radius: 18px; padding: 22px; }
+        .guest-album .guest-guide-item { display: flex; gap: 12px; align-items: flex-start; }
+        .guest-album .guest-guide-item > svg { flex-shrink: 0; color: var(--moss); margin-top: 2px; }
+        .guest-album .guest-guide-item:last-child > svg { color: var(--burgundy); }
+        .guest-album .guest-guide-item h3 { font-size: 13px; font-weight: 600; }
+        .guest-album .guest-guide-item p { font-size: 12px; line-height: 1.8; color: var(--muted); margin-top: 6px; }
+        .guest-album .guests-count { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--moss); margin-top: 28px; }
+        .guest-album .guest-cards { margin-top: 14px; }
+        .guest-album .guest-cards > button { border-radius: 18px; background: #fffdf9; transition: box-shadow .2s, border-color .2s; }
+        .guest-album .guest-cards > button:hover { border-color: #59664a70; box-shadow: 0 6px 20px #3943310a; }
+        .guest-album .guest-cards > button > div { border-radius: 50%; }
+        .guest-album .guests-empty { text-align: center; padding: 36px 24px; color: var(--moss); }
+        .guest-album .guests-empty > svg { margin: 0 auto; }
+        .guest-album .guests-empty h3 { font-family: Georgia, 'Times New Roman', serif; font-size: 26px; margin-top: 16px; }
+        .guest-album .guests-empty p { font-size: 12px; color: var(--muted); line-height: 1.8; max-width: 290px; margin: 10px auto 0; }
+        .guest-album .album-nav { width: min(480px, calc(100% - 24px)); left: 50%; right: auto; bottom: 12px; transform: translateX(-50%); border: 1px solid var(--line); border-radius: 22px; padding-top: 10px; box-shadow: 0 8px 35px #17181415; }
+        .guest-album .album-nav button { border-radius: 14px; font-size: 10px; }
+        @media (max-width: 760px) { .guest-album .album-header { padding: 30px 20px; } .guest-album .header-eyebrow { font-size: 8px; letter-spacing: .13em; } .guest-album .album-title h1 { font-size: clamp(29px, 7vw, 44px); } .guest-album .header-caption { font-size: 13px; } .guest-album.joining .album-content { padding-top: 24px; max-width: 510px; } .guest-album .welcome-layout { grid-template-columns: minmax(0, 1fr); gap: 35px; } .guest-album .profile-card { order: 0; padding: 26px 24px; } .guest-album .welcome-story { order: 1; padding: 0 16px; } .guest-album .wedding-seal { width: 58px; height: 58px; font-size: 20px; margin-bottom: 26px; } .guest-album .welcome-story h2 { font-size: 34px; } .guest-album .story-description { font-size: 13px; } .guest-album.has-guest .album-header { padding: 22px 20px; } .guest-album.has-guest .header-eyebrow { font-size: 7px; } .guest-album.has-guest .album-title h1 { font-size: 27px; } .guest-album .guests-guide { grid-template-columns: minmax(0, 1fr); padding: 18px; gap: 18px; } .guest-album .album-shortcuts { grid-template-columns: minmax(0, 1fr); } }
+        @media (prefers-reduced-motion: reduce) { .guest-album *, .guest-album *::before, .guest-album *::after { transition: none !important; } }
+      `}</style>
     </main>
   );
 }
