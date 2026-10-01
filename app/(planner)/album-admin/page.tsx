@@ -21,7 +21,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 import { PageHeader } from "@/components/planner/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -72,6 +72,7 @@ export default function AlbumAdminPage() {
   const [newMission, setNewMission] = useState("");
   const [baseUrl, setBaseUrl] = useState(process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "");
   const [draft, setDraft] = useState<SettingsDraft | null>(null);
+  const [downloadNotice, setDownloadNotice] = useState<{ title: string; description: string } | null>(null);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -166,6 +167,25 @@ export default function AlbumAdminPage() {
       pending,
     };
   }, [media, guests]);
+
+  function handleDownload(event: MouseEvent<HTMLAnchorElement>, favorites = false) {
+    if ((favorites ? stats.favorites : stats.ready) > 0) {
+      setDownloadNotice(null);
+      return;
+    }
+    event.preventDefault();
+    setDownloadNotice(
+      favorites
+        ? {
+            title: "Todavía no tenés favoritas",
+            description: "Marcá el corazón en las fotos o videos que quieras guardar y después descargalos desde acá.",
+          }
+        : {
+            title: "Todavía no hay recuerdos para descargar",
+            description: "Cuando se termine de subir la primera foto o video, vas a poder descargar el álbum.",
+          },
+    );
+  }
 
   async function saveSettings() {
     if (!album || !draft) return;
@@ -556,17 +576,36 @@ export default function AlbumAdminPage() {
             <a
               className="flex items-center gap-2 rounded-xl bg-[var(--moss)] px-4 py-3 text-sm text-white"
               href={`/api/album/download?albumId=${album.id}`}
+              onClick={handleDownload}
             >
               <Download size={16} /> Álbum completo
             </a>
             <a
               className="flex items-center gap-2 rounded-xl border border-[var(--line)] px-4 py-3 text-sm"
               href={`/api/album/download?albumId=${album.id}&favorites=1`}
+              onClick={(event) => handleDownload(event, true)}
             >
               <Heart size={16} /> Favoritas
             </a>
           </div>
         </div>
+        {downloadNotice ? (
+          <div role="status" className="mt-5 flex items-start gap-3 rounded-2xl border border-[var(--line)] bg-[var(--cream)] p-4">
+            <Heart size={20} className="mt-0.5 shrink-0 text-[var(--burgundy)]" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">{downloadNotice.title}</p>
+              <p className="mt-1 text-sm leading-6 text-[var(--muted)]">{downloadNotice.description}</p>
+              {stats.ready > 0 ? (
+                <a href="#album-media" className="mt-2 inline-block text-sm font-medium text-[var(--moss)] underline underline-offset-4">
+                  Elegir favoritas ↓
+                </a>
+              ) : null}
+            </div>
+            <button type="button" onClick={() => setDownloadNotice(null)} aria-label="Cerrar aviso de descarga" className="shrink-0 rounded-lg p-1 text-[var(--muted)] hover:bg-[var(--cream-2)]">
+              <X size={18} />
+            </button>
+          </div>
+        ) : null}
       </Card>
       {!migrationMissing ? (
         <Card className="p-5 sm:p-6">
@@ -677,7 +716,7 @@ export default function AlbumAdminPage() {
         </div>
       </Card>
 
-      <section>
+      <section id="album-media">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--moss)]">Moderación y selección</p>
