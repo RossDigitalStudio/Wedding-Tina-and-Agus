@@ -58,11 +58,11 @@ export default function DashboardPage() {
   const upcomingPayments = useMemo(() => pendingPayments.slice(0, 4), [pendingPayments]);
 
   return (
-    <div className="space-y-7">
+    <div className="min-w-0 space-y-7">
       <PageHeader eyebrow="23 · 10 · 2027" title="Nuestro casamiento" description="Un resumen de lo importante: próximos pasos, invitados, pagos y progreso general." />
 
       <Card className="overflow-hidden bg-[var(--ink)] text-white">
-        <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
+        <div className="grid min-w-0 grid-cols-1 gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-center">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80"><Heart size={14} fill="currentColor" /> Agustina & Agustín</div>
             <h2 className="mt-5 max-w-2xl font-serif text-4xl leading-tight sm:text-5xl">Faltan <span className="text-[#c7d1b7]">{Math.max(daysToParty, 0)} días</span> para la iglesia y la fiesta.</h2>
@@ -76,33 +76,33 @@ export default function DashboardPage() {
         </div>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={Users} label="Invitados" value={loading ? "—" : data.guestCount} detail={`Objetivo aproximado: ${wedding.guest_target}`} />
         <StatCard icon={CheckCircle2} label="Tareas hechas" value={loading ? "—" : `${taskDone}/${data.tasks.length}`} detail={`${taskProgress}% del plan inicial`} />
         <StatCard icon={PartyPopper} label="Fiesta confirmados" value={loading ? "—" : `${partyConfirmed}/${partyInvites.length}`} detail="RSVP de la fiesta" />
         <StatCard icon={CircleDollarSign} label="Pagos pendientes" value={loading ? "—" : pendingPayments.length} detail="Incluye cuotas del salón" />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Card className="p-5 sm:p-6">
+      <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-2">
+        <Card className="min-w-0 p-5 sm:p-6">
           <div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--moss)]">Próximos pasos</p><h3 className="mt-1 font-serif text-2xl">Pendientes cercanos</h3></div><CalendarClock className="text-[var(--moss)]" size={21} /></div>
           <div className="mt-5 space-y-2">
             {upcomingTasks.length ? upcomingTasks.map((task) => (
               <div key={task.id} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--cream)] px-3 py-3">
-                <div className="min-w-0"><p className="truncate text-sm font-medium">{task.title}</p><p className="mt-1 text-xs text-[var(--muted)]">{task.due_date ? format(parseISO(task.due_date), "d MMM yyyy", { locale: es }) : "Sin fecha"} · {task.category}</p></div>
+                <div className="min-w-0"><p className="truncate text-sm font-medium">{task.title}</p><p className="mt-1 break-words text-xs text-[var(--muted)]">{task.due_date ? format(parseISO(task.due_date), "d MMM yyyy", { locale: es }) : "Sin fecha"} · {task.category}</p></div>
                 <StatusBadge tone={task.status === "in_progress" ? "warning" : "neutral"}>{task.status === "in_progress" ? "En curso" : "Pendiente"}</StatusBadge>
               </div>
             )) : <p className="py-8 text-center text-sm text-[var(--muted)]">No hay pendientes abiertos.</p>}
           </div>
         </Card>
 
-        <Card className="p-5 sm:p-6">
+        <Card className="min-w-0 p-5 sm:p-6">
           <div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--burgundy)]">Presupuesto</p><h3 className="mt-1 font-serif text-2xl">Próximos pagos</h3></div><Clock3 className="text-[var(--burgundy)]" size={21} /></div>
           <div className="mt-5 space-y-2">
             {upcomingPayments.length ? upcomingPayments.map((payment) => (
               <div key={payment.id} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--cream)] px-3 py-3">
                 <div className="min-w-0"><p className="truncate text-sm font-medium">{payment.concept}</p><p className="mt-1 text-xs text-[var(--muted)]">Vence {format(parseISO(payment.due_date), "d MMM yyyy", { locale: es })}</p></div>
-                <div className="text-right text-sm font-semibold">{currency(payment.amount)}</div>
+                <div className="max-w-[50%] shrink-0 break-words text-right text-sm font-semibold">{currency(payment.amount)}</div>
               </div>
             )) : <p className="py-8 text-center text-sm text-[var(--muted)]">No hay pagos pendientes.</p>}
           </div>
