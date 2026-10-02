@@ -80,10 +80,14 @@ export default function DashboardPage() {
             <p className="mt-3 text-sm text-white/75">{daysToParty > 0 ? <>Faltan <strong className="font-serif text-3xl font-normal text-[#c7d1b7]">{daysToParty}</strong> días para celebrar</> : daysToParty === 0 ? "Hoy es nuestro gran día" : "Un día para recordar siempre"}</p>
             <p className="mt-2 flex items-start gap-2 text-xs leading-5 text-white/60"><PartyPopper size={14} className="mt-0.5 shrink-0" /><span className="break-words">{wedding.reception_name || "ART Event Center"}{wedding.reception_address ? ` · ${wedding.reception_address}` : ""}</span></p>
           </div>
-          <div className="grid min-w-0 grid-cols-2 gap-3">
-            {[{ label: "Civil", date: wedding.civil_date }, { label: "Iglesia y fiesta", date: wedding.ceremony_date }].map(({ label, date }) => <div key={label} className="min-w-0 rounded-2xl border border-white/15 bg-white/5 p-3 sm:p-4">
-              <p className="text-xs text-[#c7d1b7]">{label}</p><p className="mt-2 font-serif text-3xl">{format(parseISO(date), "d")}</p><p className="mt-1 text-xs text-white/75">{format(parseISO(date), "MMMM yyyy", { locale: es })}</p>
-            </div>)}
+          <div className="min-w-0 rounded-2xl border border-white/15 bg-white/5 p-4 sm:p-5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#c7d1b7]">Nuestras fechas</p>
+            <div className="mt-4 space-y-4">
+              {[{ label: "Casamiento civil", date: wedding.civil_date, icon: CalendarDays }, { label: "Iglesia y fiesta", date: wedding.ceremony_date, icon: Heart }].map(({ label, date, icon: Icon }, index) => <div key={label} className={`flex min-w-0 items-start gap-3 ${index > 0 ? "border-t border-white/15 pt-4" : ""}`}>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#c7d1b7]/15 text-[#c7d1b7]"><Icon size={16} /></span>
+                <div className="min-w-0"><p className="text-xs font-medium text-white/70">{label}</p><time dateTime={date} className="mt-1 block break-words font-serif text-xl leading-snug text-white">{format(parseISO(date), "d 'de' MMMM 'de' yyyy", { locale: es })}</time><p className="mt-1 text-xs capitalize text-[#c7d1b7]">{format(parseISO(date), "EEEE", { locale: es })}</p></div>
+              </div>)}
+            </div>
           </div>
         </div>
       </Card>
