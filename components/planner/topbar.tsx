@@ -2,6 +2,8 @@
 
 import { Heart, Menu } from "lucide-react";
 import Link from "next/link";
+import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useWedding } from "./wedding-context";
@@ -21,7 +23,9 @@ export function Topbar() {
             <div className="font-serif text-lg leading-none lg:hidden">
               {wedding.partner_one_name} & {wedding.partner_two_name}
             </div>
-            <div className="hidden text-sm text-[var(--muted)] lg:block">Organizando el 23 de octubre de 2027</div>
+            <div className="hidden text-sm text-[var(--muted)] lg:block">
+              Organizando el {format(parseISO(wedding.ceremony_date), "d 'de' MMMM 'de' yyyy", { locale: es })}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
