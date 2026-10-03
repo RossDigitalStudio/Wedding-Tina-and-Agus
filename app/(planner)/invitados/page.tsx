@@ -1,6 +1,7 @@
 "use client";
 
-import { Baby, CheckCircle2, Clock3, Loader2, Pencil, Plus, Search, Trash2, UserRoundPlus, Users } from "lucide-react";
+import Link from "next/link";
+import { TableProperties, Baby, CheckCircle2, Clock3, Loader2, Pencil, Plus, Search, Trash2, UserRoundPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/planner/page-header";
 import { useWedding } from "@/components/planner/wedding-context";
@@ -215,7 +216,7 @@ export default function GuestsPage() {
 
   return (
     <div className="min-w-0 space-y-5">
-      <PageHeader eyebrow="Las personas que queremos cerca" title="Invitados" description="Nuestra lista, sus confirmaciones y los detalles para que cada persona se sienta bienvenida." actions={<Button className="min-h-11" onClick={openNew}><UserRoundPlus size={17} /> Agregar invitado</Button>} />
+      <PageHeader eyebrow="Las personas que queremos cerca" title="Invitados" description="Nuestra lista, sus confirmaciones y los detalles para que cada persona se sienta bienvenida." actions={<div className="flex flex-wrap gap-2"><Link href="/mesas" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-4 text-sm font-medium hover:bg-[var(--cream-2)]"><TableProperties size={17} /> Organizar mesas</Link><Button className="min-h-11" onClick={openNew}><UserRoundPlus size={17} /> Agregar invitado</Button></div>} />
       <Card className="overflow-hidden border-[var(--moss-dark)] bg-[var(--ink)] p-5 text-white sm:p-6"><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs text-[#c7d1b7]">Nuestra celebración, juntos</p><h2 className="mt-2 font-serif text-3xl">Un lugar para cada historia</h2></div><p className="text-sm text-white/75">{loading || error ? "Actualizando…" : `${stats.total} personas · Meta aproximada: ${wedding.guest_target}`}</p></div><div className="mt-4 flex flex-wrap gap-2">{([{ key: "civil", label: "Civil", value: stats.civil }, { key: "church", label: "Iglesia", value: stats.church }, { key: "party", label: "Fiesta", value: stats.party }]).map(({ key, label, value }) => <button key={key} aria-pressed={eventFilter === key} onClick={() => setEventFilter(eventFilter === key ? "all" : key)} style={{ fontSize: "12px" }} className={`min-h-11 rounded-full border px-4 ${eventFilter === key ? "border-[#c7d1b7] bg-[#c7d1b7] text-[var(--ink)]" : "border-white/20 bg-white/5 text-white/80"}`}>{label} · {loading || error ? "—" : value}</button>)}</div></Card>
       <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4">{[{ label: "En nuestra lista", value: stats.total, icon: Users }, { label: "Fiesta confirmados", value: stats.confirmedParty, icon: CheckCircle2 }, { label: "Fiesta por responder", value: partyPending, icon: Clock3 }, { label: "Niños en la lista", value: guests.filter((guest) => guest.is_child).length, icon: Baby }].map(({ label, value, icon: Icon }) => <Card key={label} className="min-w-0 p-4"><Icon size={18} className="text-[var(--moss)]" /><p className="mt-2 text-xs text-[var(--muted)]">{label}</p><p className="mt-1 text-2xl font-semibold">{loading || error ? "—" : value}</p></Card>)}</div>
       {notice ? <p role="status" className="rounded-xl bg-[var(--moss-soft)] p-3 text-sm text-[var(--moss-dark)]">{notice}</p> : null}
